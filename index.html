@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册页面</title>
+</head>
+<body>
+    <form method ='POST'>
+        <table width="1000">
+            <!-- 第一行 姓名-->
+            <p>
+                <tr>
+                <label for="admin_n"><td>姓名：</td></label> 
+                <td> <input type="text" id="admin_n" name="admin_n" ></td>   
+                </tr>
+           </p>
+             <!-- 第二行 用户名 -->
+            <p>
+                 <tr>
+                <label for="a_Name"><td>用户名：</td></label>
+                <td><input type="text" id="a_Name" name="a_Name" ></td>
+                </tr>
+            </p>
+           <!-- 第三行 性别-->
+         <!-- <tr>
+             <td>性别：</td>
+             <td>
+                 <input type="radio" name="sex" id="nan"><label for="nan">男</label>
+                 <input type="radio" name="sex" id="nv"><label for="nv">女</label>
+             </td> 
+         </tr>-->
+            <!-- 第四行 生日 -->
+       <!--<tr>
+             <td>生日：</td>
+             <td>
+                 <select>
+                     <option>请选择年份</option>
+                     <option >1999</option>
+                     <option >2000</option>
+                     <option >2001</option>
+                 </select>
+                 <select>
+                    <option>请选择月份</option>
+                    <option >1</option>
+                    <option >2</option>
+                    <option >3</option>
+                </select>
+                <select>
+                    <option>请选择日</option>
+                    <option >1</option>
+                    <option >2</option>
+                    <option >3</option>
+                </select>
+             </td>
+         </tr>-->  
+             <!-- 第五行 用户密码-->
+            <p>
+                 <tr>
+                 <label for="a_Pw"><td> 用户密码：</td></label>
+                 <td><input type="passport" id="a_Pw" name="a_Pw" ></td>
+                 </tr>
+            </p>
+             <!-- 第六行 联系方式-->
+            <p>
+                 <tr>
+                 <label for="a_Tel"><td>联系方式:</td></label>
+                 <td><input type="text" id="a_Tel" name="a_Tel" ></td>
+                 </tr>
+            </p>
+            <!-- 第七行 获得验证码 -->
+                 <tr>
+                 <td></td>
+                 <td><input type="button" value="获得验证码"></td>
+                 </tr>
+            <!-- 第八行 邮箱-->
+            <p>
+                 <tr>
+                 <label for="a_Email"><td>邮箱：</td></label>
+                 <td><input type="text" id="a_Email" name="a_Email" ></td> 
+                 </tr>
+            </p> 
+            <!-- 第九行 管理权限 -->
+            <p>
+                 <tr>
+                 <lable for="a_Limit"><td>管理权限：</td></lable>
+                 <td>root<input type="checkbox" value="root" id="a_Limit" name="a_Limit" ></td>
+                 </tr>
+            </p>
+            <!-- 第十行 注册按钮 -->
+                 <tr>
+                 <td></td>
+                 <td><input type="submit" value="注册"></td>
+                 </tr>
+        </table>
+    </form>
+</body>
+</html>
+//引入所需模块与工具
+var http = require('http');     // 引入http
+var querystring =require('querystring');     //引入url
+var url = require('url');       //引入文件管理
+var fs = require('fs');
+//解决跨域问题
+const express = require("express");
+const cors = require("cors");
+const { get } = require("axios").default; //利用axois发送个网络请求
+const app = express();
+app.use(cors());
+/*var cors = require("cors"); //  cnpm install cors
+var app = getApp();
+app.use(cors({
+　　methods: ["GET", "POST"],
+　　alloweHeaders: ["Content-Type", "application/json;charset=utf-8;application/x-www-form-urlencoded"]
+}));*/
+
+//链接数据库
+var mysql = require('mysql');    //引入mysql模块
+var mysql_user = {               //编写数据库连接数据
+    host: '172.27.28.153',       //地址
+    user:'root',                 //用户名
+    password:'1234',             //密码
+    database:'admin',            //要链接的数据库名字
+    multipleStatements: true     // 支持执行多条 sql 语句
+};
+var connection = mysql.createConnection(mysql_user);     //建立数据库连接
+connection.connect(function(err){                        //链接数据库
+    if(err) {                                            //链接错误执行
+        console.log('[错误]' + err);
+        connection.end();
+        return;
+    };
+    console.log('链接成功');                              //否则链接成功
+});
+
+//注册事件
+var Event = require ('events').EventEmitter;   //引入事件模块
+var query = new Event();                       //创建事件对象
+//定义注册事件    传入数据 连接数据库对象
+query.on('register',function(admin_n, a_Name, a_Pw, a_Tel, a_Email, a_Limit, connection){
+    //编写查询语句
+        var find = "SELECT * FROM a_infor WHERE  name = '  "+ admin_n +"'";
+    //编写添加语句
+        var insert =  'INSERT INTO a_infor(`name`,a_Name,a_Pw,a_Tel,a_Email,a_Limit) VALUES (?,?,?,?,?,?)';
+        var add = 'SELECT IFNULL(MAX(CAST(a_Id AS UNSIGNED)),0) + 1 FROM a_infor';
+    //执行sql语句
+        connection.query(find,function (err, result) {
+            if (err) {    //链接失败直接return;
+                console.log('[错误]' + err);
+                return;
+            };
+
+            if (result.length) {   //如果数据库返回数据 说明账号已存在
+                console.log('账号已存在');
+                return;
+            } else {    //否则不存在,可以注册
+                var inserInfo = [admin_n,a_Name,a_Pw,a_Tel,a_Email,a_Limit];
+            //执行插入语句
+                connection.query(insert,inserInfo, function(err,result) {
+                    if(err) {      //链接失败,直接return;
+                        console.log('[注册错误]' + err);
+                        return;
+                    };
+                    connection.query(add,function(err,result){
+                        if(err) {
+                            console.log('[自增键错误]' + err);
+                            return;
+                        };
+                    });
+                    console.log('---------------start---------------');
+                    console.log('注册成功');
+                    console.log(result);
+                    console.log('---------------end---------------');
+                });
+            };   
+        });
+})
+
+
+//创建一个可以访问的端口
+http.createServer(function(req,res){
+    /*console.log('链接成功');
+    //向请求的客户端发送响应头
+    res.writeHead(200,{'Content-Type': 'text/html; charset=urf-8'});
+    res.end('Hello world');*/
+    if(res.url == '/favicon.ico'){
+        return;  //加载图标也会被当做一次http请求
+    };
+    var pathname = url.parse(req.url).pathname;    //解析地址栏地址
+    var body = '';   //定义一个放post数据的变量
+
+    req.on('data', function(chunk) {    //接收post参数并赋值给body
+        body = '';
+        body += chunk;
+        body = querystring.parse(body);
+    });
+
+//使用fs文件管理读取相应文件
+/*var fs = require('fs');
+let path = require('path');
+let PUBLIC_PATH = path.resolve(__dirname, 'xx.json');*/
+fs.readFile(pathname.substring(1)/*PUBLIC_PATH */+ '.html' , function(err,data){
+    if(err){    //如果错误存在说明文件不存在
+        res.writeHead(404,{
+            'Content-Type': 'text/html;charset=utf-8'
+        });
+        res.write('404 not found');
+    } else {    //否则文件读取成功
+        res.writeHead(200,{
+            'Content-Type' : 'text/html; charset=urf-8'
+        });
+
+        if(body) {    //如果body存在说明进行了post请求
+            switch (pathname) {    //判断是登录还是注册
+                case '/login':  //执行登陆事件   并传入对应参数
+                    query.emit('login',body.username,body.password,connection);
+                    break;
+                case '/register':    //执行注册事件  并传入对应参数
+                    query.emit('register', body.admin_n, body.a_Name, body.a_Pw, body.a_Tel, body.a_Email, body.a_Limit, connection);
+                    break;
+            }
+        };
+        res.write(data);
+    };
+    res.end();
+})
+}).listen(3000);
+
